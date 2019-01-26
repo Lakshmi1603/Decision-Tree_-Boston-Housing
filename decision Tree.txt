@@ -1,0 +1,102 @@
+getwd()
+library(readr)
+BH<-read.csv("C:/Data Science with R/Assignments/Graded Assignments/Topic 11.2 - Decision Trees/BH.csv")
+view(BH)
+str(BH)
+summary(BH)
+library(dplyr)
+library(rpart)
+library(irr)
+library(caret)
+library(rattle)
+library(rpart.plot)
+library(ggplot2)
+library(RColorBrewer)
+names(BH)
+
+#Q1. How many missing values are there for the variable named ‘TARGET’?
+index<-which(is.na(BH$TARGET))
+
+#Q2 How many unique observations are there for the variable named ‘cus_employername’?How many unique observations are there for the variable named ‘cus_employername’?
+
+index1<-which(is.na(BH$cus_employername))
+BH1<-BH[-index1,]
+summary(BH1)
+index2<-uniquw(BH!$cus_employername)
+index2[lapply(index2,length)>0]
+The numder of unique records are 16191, but after deleting NA values from Target, the unique records are 13282.
+
+#Q3. Unique values in variablel "Good_Bad"
+ unique variables are 3, + some NA values
+index3<-unique(BH$GOOD_BAD)
+list(index3)
+
+#Q4. If you get rid of all missing values in the TARGET column, then how many rows will be left?
+bh1<-select(BH,9,110)
+str(bh1)
+bh1$TARGET<-as.factor(bh1$TARGET)
+#Deleting mising values in both columns
+index<-which(is.na(bh1$TARGET))
+bh1<-bh1[-index,]
+
+which(!complete.case(bh1))
+bh1<-bh1[-22300,]
+summary(bh1)
+
+#Q5 In the dataframe, created above, how many duplicate values exist in the column named ‘cus_employername’? 
+index5<-length(bh1$cus_employername) - length(index2)
+length(index5)
+
+#Q6 How many rows will be there in a dataframe from which missing values in TARGET column have been eliminated and duplicated values in ‘cus_employername’ have been eliminated.
+
+
+bh1
+dat1<-bh1
+dat2<-dat1[!duplicated(dat1),]
+duplicated(dat2)
+
+#Q7 How many dummy/indicator variables will have to be created for cus_employername if ‘cus_employername’ is included in the logistic model
+
+As there are 8 highly frequent employernames, 8 dummies are to be created at the least, and the rest can be grouped as "other"
+dat1$cus_employername<-as.factor(dat1$cus_employername)
+summary(dat1$cus_employername)
+#Checking: 9 variables
+dummy<-dummyVars(~.,data = dat1, fullRank = TRUE)
+dummy
+
+#Q8 Use a decision tree algorithm to divide all the entries in the ‘cus_employername’ into two unique groups, one group containing names of employers with high bad rate and another containing names of employers with low bad rate. How many entries exist in the group having high bad rate?
+
+
+Decision Tree
+mod<-rpart(TARGET~cus_employername,method = "class",data = bh1,control = rpart.control(cp=0.005,
+        minsplit = 2),parms = list(split="gini"))
+summary(mod)
+
+#ploting the tree
+fancyRpartPlot(mod)
+
+options(scipen = 999)
+#extracting the rules
+asRules(mod)
+#node 2 has target 0 with probability 19% (100-81)
+#node3 has target 1 with probability 88%
+
+#Group 1-> Consisting of all employer names where the bad rate is high (2) 
+#Group 2 -> Consisting of all the employer names where bad rate is low (3)
+
+#extracting nodes
+mod$node<-mod$wher
+head(mod$node,50)
+
+#Solution:
+
+bh1%>%mutate(groups=ifelse(mod$node==2, "Group1", "Group2"), rowname = T) -> bh1
+head(bh1,50)
+
+#Checking Bad rate in each group
+bh1$groups<-as.factor(bh1$groups)
+table(bh1$groups, bh1$TARGET)/nrow(bh1))*100
+
+#As required, Group1 consists of all names where bad rates are high: 50.17%
+#and Group2 consists of all names where bad rates are low: 
+
